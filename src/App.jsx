@@ -4,7 +4,7 @@ import { AppRouter } from './router';
 
 export const App = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/mybooks"> {/* nombre del repo para GH Pages */}
       <AppRouter />
     </BrowserRouter>
   )
