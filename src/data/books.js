@@ -678,25 +678,5 @@ export const books = [
         status: 'Leyendo',
         bookScore: 0,
         numberReading: 1
-    },
-    {
-        id: 35,
-        ISBN: '',
-        title: '',
-        subtitle: '',
-        author: '',
-        editorial: '',
-        nroPages: 0,
-        initialDate: '',
-        endDate: '',
-        cover: '',
-        genre: '',
-        publicationDate: '',
-        format: '',
-        origin: '',
-        review: '',
-        status: '',
-        bookScore: 0,
-        numberReading: 0
     }
 ];
