@@ -4,7 +4,7 @@ export const Sidebar = ({ onClose }) => {
     return (
         <aside className="fixed top-0 left-0 z-[1100] h-screen bg-white text-gray-700 pt-8 shadow-[2px_0_8px_rgba(0,0,0,0.1)] flex flex-col justify-between items-center w-full max-w-xs sm:max-w-[250px] sm:w-[250px] transition-all duration-300">
             <button
-                className="absolute top-2 right-4 text-gray-200 hover:text-red-200 text-2xl"
+                className="absolute top-2 left-6 text-gray-200 hover:text-red-200 text-2xl cursor-pointer"
                 onClick={onClose}
                 aria-label="Cerrar menú"
             >
