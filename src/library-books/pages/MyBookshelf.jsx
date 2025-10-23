@@ -1,110 +1,10 @@
 import React, { useMemo } from "react";
+import { useLibraryStore } from "../../hooks";
 
 // =================================================================
 // 1. DATOS SIMULADOS DE LIBROS
 //    En una aplicación real, estos vendrían de tu estado/base de datos
 // =================================================================
-
-const mockBooks = [
-  {
-    id: 1,
-    title: "Cien años de soledad",
-    author: "G. G. Márquez",
-    year: 1967,
-    color: "#A52A2A",
-  },
-  {
-    id: 2,
-    title: "Pelea de gallos y otros cuentos",
-    author: "M. F. Ampuero",
-    year: 2018,
-    color: "#32CD32",
-  },
-  {
-    id: 3,
-    title: "El amor en los tiempos del cólera",
-    author: "G. G. Márquez",
-    year: 1985,
-    color: "#FFD700",
-  },
-  {
-    id: 4,
-    title: "La casa de los espíritus",
-    author: "Isabel Allende",
-    year: 1982,
-    color: "#4682B4",
-  },
-  {
-    id: 5,
-    title: "Ensayo sobre la ceguera",
-    author: "José Saramago",
-    year: 1995,
-    color: "#800080",
-  },
-  {
-    id: 6,
-    title: "1984",
-    author: "George Orwell",
-    year: 1949,
-    color: "#444444",
-  },
-  {
-    id: 7,
-    title: "Rayuela",
-    author: "Julio Cortázar",
-    year: 1963,
-    color: "#DAA520",
-  },
-  {
-    id: 8,
-    title: "Crónica de una muerte anunciada",
-    author: "G. G. Márquez",
-    year: 1981,
-    color: "#F08080",
-  },
-  {
-    id: 9,
-    title: "Fahrenheit 451",
-    author: "Ray Bradbury",
-    year: 1953,
-    color: "#FFA07A",
-  },
-  {
-    id: 10,
-    title: "Crimen y castigo",
-    author: "Fiódor Dostoievski",
-    year: 1866,
-    color: "#2F4F4F",
-  },
-  {
-    id: 11,
-    title: "El nombre del viento",
-    author: "Patrick Rothfuss",
-    year: 2007,
-    color: "#CD853F",
-  },
-  {
-    id: 12,
-    title: "Un mundo feliz",
-    author: "Aldous Huxley",
-    year: 1932,
-    color: "#6A5ACD",
-  },
-  {
-    id: 13,
-    title: "Lo que el viento se llevó",
-    author: "M. Mitchell",
-    year: 1936,
-    color: "#FF6347",
-  },
-  {
-    id: 14,
-    title: "La sombra del viento",
-    author: "Carlos Ruiz Zafón",
-    year: 2001,
-    color: "#556B2F",
-  },
-];
 
 // =================================================================
 // 2. FUNCIÓN DE UTILIDAD PARA ESTILOS ALEATORIOS
@@ -223,24 +123,49 @@ const BookSpine = React.memo(({ book }) => {
 // =================================================================
 
 export const MyBookshelf = () => {
-  // La estantería es un contenedor con una balda de madera
-  const Bookshelf = ({ books, shelfId }) => (
-    <div className="w-full flex justify-start items-end h-[280px] p-2 relative">
-      {/* La balda (shelf) de madera */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-4 bg-yellow-900 shadow-xl z-10 
-                      rounded-b-sm border-t-2 border-yellow-800"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, rgba(255,255,255,.05), rgba(255,255,255,.05) 10px, transparent 10px, transparent 20px)",
-        }}
-      />
+  const { books } = useLibraryStore();
 
-      {/* Los libros */}
-      <div className="flex flex-row items-end h-full w-full overflow-x-auto overflow-y-hidden pb-4 pr-4 z-20">
-        {books.map((book) => (
-          <BookSpine key={book.id} book={book} />
-        ))}
+  const groupedBooks = useMemo(() => {
+    return books.reduce((acc, book) => {
+      const genre = book.genre || "Sin Género"; // Usar 'Sin Género' si falta
+      if (!acc[genre]) {
+        acc[genre] = [];
+      }
+      acc[genre].push(book);
+      return acc;
+    }, {});
+  }, [books]);
+
+  const genres = Object.keys(groupedBooks);
+
+  // La estantería es un contenedor con una balda de madera
+  const Bookshelf = ({ books, title }) => (
+    <div className="mb-8">
+      <h2 className="text-2xl font-semibold mb-2 text-stone-700 border-b border-stone-300 pb-1">
+        {title}
+      </h2>
+      <div className="w-full flex justify-start items-end h-[280px] p-2 relative">
+        {/* La balda (shelf) de madera */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-4 bg-yellow-900 shadow-xl z-10 
+                       rounded-b-sm border-t-2 border-yellow-800"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(45deg, rgba(255,255,255,.05), rgba(255,255,255,.05) 10px, transparent 10px, transparent 20px)",
+          }}
+        />
+
+        {/* Los libros */}
+        <div className="flex flex-row items-end h-full w-full overflow-x-auto overflow-y-hidden pb-4 pr-4 z-20">
+          {books.map((book) => (
+            // Usamos el id o _id para la key
+            <BookSpine key={book.id || book._id} book={book} />
+          ))}
+          {/* Espacio vacío para completar la estantería */}
+          {books.length < 15 && (
+            <div className="flex-grow min-w-[50px] h-full"></div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -257,25 +182,27 @@ export const MyBookshelf = () => {
           className="bg-stone-200 p-4 rounded-xl shadow-inner border border-stone-300"
           style={{
             minHeight: "600px",
-            // Detalle de color de pared o fondo
             backgroundImage:
               "radial-gradient(circle, #f5f5f4 0%, #e7e5e4 100%)",
           }}
         >
-          {/* Estantería 1: Ficción */}
-          <h2 className="text-2xl font-semibold mb-2 text-stone-700 border-b border-stone-300 pb-1">
-            Ficción Clásica
-          </h2>
-          <Bookshelf books={mockBooks.slice(0, 8)} shelfId="fiction" />
+          {/* Renderizado dinámico de estanterías por género */}
+          {genres.map((genre) => (
+            <React.Fragment key={genre}>
+              <Bookshelf books={groupedBooks[genre]} title={genre} />
+              {/* Separador de pared y espacio, excepto después del último género */}
+              {genre !== genres[genres.length - 1] && (
+                <div className="my-8 border-t border-stone-300/50"></div>
+              )}
+            </React.Fragment>
+          ))}
 
-          {/* Separador de pared y espacio */}
-          <div className="my-8 border-t border-stone-300/50"></div>
-
-          {/* Estantería 2: Ciencia Ficción y Fantasía */}
-          <h2 className="text-2xl font-semibold mb-2 text-stone-700 border-b border-stone-300 pb-1">
-            Ciencia Ficción
-          </h2>
-          <Bookshelf books={mockBooks.slice(8, 14)} shelfId="scifi" />
+          {/* Si no hay libros, mostrar un mensaje */}
+          {books.length === 0 && (
+            <div className="text-center py-20 text-gray-500 text-lg">
+              No hay libros cargados en tu biblioteca.
+            </div>
+          )}
         </div>
       </div>
     </div>

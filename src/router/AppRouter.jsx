@@ -2,9 +2,14 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 // import { Home } from '../pages';
 // import { BookDetail, RegisterBook } from '../components';
 import { LoginPage } from '../auth';
-import { LibraryBooksPage, RegisterBook, HomePage, ScrollToTop } from '../library-books';
-import BookDetails from '../library-books/pages/BookDetails';
-
+import {
+  BookDetails,
+  LibraryBooksPage,
+  RegisterBook,
+  HomePage,
+  ScrollToTop,
+  MyBookshelf,
+} from '../library-books';
 
 export const AppRouter = () => {
 
@@ -21,6 +26,7 @@ export const AppRouter = () => {
               <Route index element={<HomePage />} />
               <Route path="register-book" element={<RegisterBook />} />
               <Route path=":slug/:_id" element={<BookDetails />} />
+              <Route path="my-bookshelf" element={<MyBookshelf />} />
 
               {/* <Route path="favorites" element={<Favorites />} /> */}
               {/* ...otras rutas anidadas... */}

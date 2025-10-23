@@ -1,6 +1,6 @@
-import { useParams } from "react-router-dom";
-import { useLibraryStore } from "../../hooks";
-import { obtenerOrdinal } from "../../data/nrosOrdinales";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useLibraryStore } from '../../hooks';
+import { obtenerOrdinal } from '../../data/nrosOrdinales';
 
 // const statusColor = {
 //   Leído: "text-green-600 bg-green-100",
@@ -9,11 +9,12 @@ import { obtenerOrdinal } from "../../data/nrosOrdinales";
 //   "Por leer": "text-orange-500 bg-orange-100",
 // };
 
-const BookDetails = () => {
+export const BookDetails = () => {
   const { _id } = useParams();
+  const navigate = useNavigate();
   const {
     books,
-    // activeBook,
+    selectBook,
     isLoading,
   } = useLibraryStore();
 
@@ -42,6 +43,11 @@ const BookDetails = () => {
   // Lógica para obtener el ordinal
   const ordinalDeLectura = obtenerOrdinal(Number(book.numberReading));
 
+  const onEditClick = () => {
+    selectBook(book);
+    navigate("/register-book");
+  };
+
   return (
     <div className=" min-h-screen">
       <main className="main-content mx-auto">
@@ -57,7 +63,13 @@ const BookDetails = () => {
               {"⭐".repeat(Math.round(book.bookScore))}{" "}
               <span className="text-gray-700">{book.bookScore.toFixed(1)}</span>
             </p>
-            <div className="book-buttons flex gap-2 flex-wrap justify-center mt-2">
+            <button
+              className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+              onClick={() => onEditClick(book)}
+            >
+              Editar
+            </button>
+            {/* <div className="book-buttons flex gap-2 flex-wrap justify-center mt-2">
               <button className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition">
                 Compartir
               </button>
@@ -67,7 +79,7 @@ const BookDetails = () => {
               <button className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition">
                 Reseña
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* Info del libro */}
@@ -290,28 +302,24 @@ const BookDetails = () => {
             {/* Biografía (Cuerpo de la Tarjeta) */}
             {/* Establecemos text-left para el párrafo de la biografía y un espaciado consistente. */}
             <div className="bio-section pt-4 mb-4 text-left">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {/* Aquí debería ir tu variable de texto (authorBioDisplay o similar) */}
-                {authorBio ? (
-                  <p className="text-gray-700 text-sm leading-relaxed mb-4">
-                    {authorBio}
-                    {book.authorBio.length > AUTHOR_BIO_MAX_LENGTH && (
-                      <button
-                        onClick={() =>
-                          console.log("Mostrar biografía completa")
-                        }
-                        className="text-indigo-600 hover:text-indigo-800 font-semibold ml-1 text-xs"
-                      >
-                        [Leer más]
-                      </button>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-gray-500 text-sm">
-                    Biografía no disponible.
-                  </p>
-                )}
-              </p>
+              {/* Aquí debería ir tu variable de texto (authorBioDisplay o similar) */}
+              {authorBio ? (
+                <p className="text-gray-700 text-sm leading-relaxed mb-4">
+                  {authorBio}
+                  {book.authorBio.length > AUTHOR_BIO_MAX_LENGTH && (
+                    <button
+                      onClick={() => console.log("Mostrar biografía completa")}
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold ml-1 text-xs"
+                    >
+                      [Leer más]
+                    </button>
+                  )}
+                </p>
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  Biografía no disponible.
+                </p>
+              )}
 
               {/* ESPACIO RESERVADO: Puedes usar un div vacío si quieres reservar el espacio del botón 'Leer más' */}
               {/* <div className="h-5"></div> */}
@@ -434,7 +442,7 @@ const BookDetails = () => {
 
               {/* Botón de acción mejorado */}
               <button className="w-full mt-4 bg-[#EFE6DD] text-[1rem] text-gray-800 font-bold py-2.5 rounded-lg shadow-md hover:bg-[#e8d8c8]  transition duration-300 transform hover:scale-[1.01] text-sm">
-                Ver todas las reseñas (42) 💬
+                Ver todas las reseñas (42)
               </button>
             </div>
           </div>
@@ -443,5 +451,3 @@ const BookDetails = () => {
     </div>
   );
 };
-
-export default BookDetails;

@@ -15,10 +15,14 @@ export const libraryBooksSlice = createSlice({
         },
         setBooks: (state, {payload}) => {
             state.books = payload;
+        },
+        onAddNewBook: (state, {payload}) => {
+            state.books.push(payload);
+            state.activeBook = null;
         }
     }
 });
 
 
 // Action creators are generated for each case reducer function
-export const { setActiveBook, setBooks } = libraryBooksSlice.actions;
+export const { setActiveBook, setBooks, onAddNewBook } = libraryBooksSlice.actions;

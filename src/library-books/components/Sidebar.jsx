@@ -18,7 +18,7 @@ export const Sidebar = ({ onClose }) => {
                 <Link to="/search" className='text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100'>
                     <span className="icon mr-2.5 text-[1.5rem]">🔍</span> Buscar
                 </Link>
-                <Link to="/library" className='text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100'>
+                <Link to="/my-bookshelf" className='text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100'>
                     <span className="icon mr-2.5 text-[1.5rem]">📚</span> Mi Biblioteca
                 </Link>
                 <Link to="/register-book" className='text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100'>

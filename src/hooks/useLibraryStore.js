@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { setActiveBook, setBooks } from '../store';
+import { onAddNewBook, setActiveBook, setBooks } from '../store';
 
 // Importa tus datos (simulando una API)
 import { books as mockBooks } from '../data/books'; 
@@ -28,6 +28,15 @@ export const useLibraryStore = () => {
         // Podrías poner dispatch(finishLoading()) aquí
     }
 
+    const startSavingBook = async (book) => {
+        if (book._id) {
+            // Actualizar libro existente
+        } else {
+            // Crear nuevo libro
+            dispatch(onAddNewBook({ ...book, _id: new Date().getTime().toString() }));
+        }
+    }
+
     
     return {
         // Properties
@@ -37,6 +46,7 @@ export const useLibraryStore = () => {
         
         // Methods
         selectBook,
-        startLoadingBooks
+        startLoadingBooks,
+        startSavingBook
     }
 }

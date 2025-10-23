@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import {
@@ -9,6 +9,7 @@ import {
   statusOptions,
   placeOriginOptions
 } from "../../data/options";
+import { useLibraryStore } from '../../hooks';
 
 const initialState = {
   ISBN: "",
@@ -32,9 +33,17 @@ const initialState = {
 };
 
 export const RegisterBook = () => {
-  const [formValues, setFormValues] = useState(initialState);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isImageError, setIsImageError] = useState(false); // Para manejar errores de carga de imagen
+  const { activeBook } = useLibraryStore()
+
+  const [formValues, setFormValues] = useState(initialState);
+
+  useEffect(() => {
+    if (activeBook !== null) {
+      setFormValues({ ...activeBook });
+    }
+  }, [ activeBook ]);
 
   const titleClass = useMemo(() => {
     if (!formSubmitted) return "";
@@ -204,6 +213,7 @@ export const RegisterBook = () => {
                       Género
                     </label>
                     <select
+                      id="genre"
                       name="genre"
                       value={formValues.genre}
                       onChange={handleChange}
