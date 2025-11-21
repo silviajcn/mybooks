@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import {
@@ -8,7 +9,7 @@ import {
   originOptions,
   statusOptions,
   placeOriginOptions
-} from "../../data/options";
+} from '../../data/options';
 import { useLibraryStore } from '../../hooks';
 
 const initialState = {
@@ -35,15 +36,69 @@ const initialState = {
 export const RegisterBook = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isImageError, setIsImageError] = useState(false); // Para manejar errores de carga de imagen
-  const { activeBook } = useLibraryStore()
+  const { activeBook, startSavingBook, selectBook } = useLibraryStore();
+  const navigate = useNavigate();
 
   const [formValues, setFormValues] = useState(initialState);
 
+  // helper para slug (igual que en HomePage)
+  const createSlug = (text) => {
+    if (!text) return "";
+    let slug = text.toLowerCase();
+    slug = slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    slug = slug.replace(/ñ/g, "n");
+    slug = slug.replace(/[^a-z0-9\s-]/g, "");
+    slug = slug.trim().replace(/[\s-]+/g, "-");
+    return slug.replace(/^-+|-+$/g, "");
+  };
+
   useEffect(() => {
     if (activeBook !== null) {
-      setFormValues({ ...activeBook });
+      const normalizeSelect = (val, options) => {
+        if (!val) return "";
+        const found = options.find(
+          (o) =>
+            String(o.option) === String(val) || String(o.value) === String(val)
+        );
+        return found ? found.option : val;
+      };
+
+      const toISODate = (d) => {
+        if (!d) return "";
+        // ya está en formato ISO
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+        // formato dd/mm/yyyy -> yyyy-mm-dd
+        const m = String(d).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (m)
+          return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+        // si viene 'YYYY' o algún string, devolver tal cual
+        return d;
+      };
+
+      setFormValues({
+        ...initialState,
+        ...activeBook,
+        // Normalizar selects para que coincidan con los value/option de los <select>
+        genre: normalizeSelect(activeBook.genre, genresOptions),
+        publicationDate: normalizeSelect(
+          activeBook.publicationDate,
+          publicationYears
+        ),
+        format: normalizeSelect(activeBook.format, formatOptions),
+        origin: normalizeSelect(activeBook.origin, originOptions),
+        originPlace: normalizeSelect(
+          activeBook.originPlace,
+          placeOriginOptions
+        ),
+        status: normalizeSelect(activeBook.status, statusOptions),
+        // Formatear fechas para inputs type="date"
+        initialDate: toISODate(activeBook.initialDate),
+        endDate: toISODate(activeBook.endDate),
+      });
+    } else {
+      setFormValues(initialState);
     }
-  }, [ activeBook ]);
+  }, [activeBook]);
 
   const titleClass = useMemo(() => {
     if (!formSubmitted) return "";
@@ -68,7 +123,7 @@ export const RegisterBook = () => {
     }));
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setFormSubmitted(true);
 
@@ -95,6 +150,30 @@ export const RegisterBook = () => {
     }
 
     Swal.fire({
+      title: "Guardando...",
+      icon: "info",
+      showConfirmButton: false,
+      timer: 900,
+    });
+
+    // Guardado (startSavingBook puede crear o actualizar según activeBook)
+    const saved = await startSavingBook(formValues); // idealmente devuelve el libro guardado con _id
+
+    // Si se pudo guardar, actualizar activeBook en store y redirigir si estamos editando
+    if (saved) {
+      // aseguramos que el store tenga el libro seleccionado
+      selectBook(saved);
+
+      // Si venimos de edición (activeBook !== null) redirigimos al detalle del libro
+      if (activeBook !== null) {
+        const bookSlug = createSlug(saved.title || formValues.title);
+        navigate(`/${bookSlug}/${saved._id || saved.id || formValues._id}`);
+        return;
+      }
+    }
+
+    // Mensaje y limpieza para caso de nuevo registro
+    Swal.fire({
       title: "¡Registro exitoso!",
       text: `El libro "${formValues.title}" ha sido registrado correctamente.`,
       icon: "success",
@@ -106,6 +185,8 @@ export const RegisterBook = () => {
 
     // Reiniciar el formulario
     setFormValues(initialState);
+    await startSavingBook(formValues);
+    setFormSubmitted(false);
   };
 
   // Lógica para mostrar la imagen o el placeholder
@@ -455,7 +536,7 @@ export const RegisterBook = () => {
             type="submit"
             className="w-full bg-[#EFE6DD] text-[1rem] text-gray-800 font-bold py-3 rounded-[8px] text-lg shadow-xl hover:bg-[#e6d5c5] transition duration-200 cursor-pointer disabled:bg-gray-400 transform hover:scale-[1.01] active:scale-[0.99]"
           >
-            Registrar libro
+            Guardar libro
           </button>
         </form>
       </div>

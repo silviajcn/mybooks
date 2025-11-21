@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { onAddNewBook, setActiveBook, setBooks } from '../store';
+import { clearActiveBook, onAddNewBook, setActiveBook, setBooks, onUpdateBook, onDeleteBook } from '../store';
 
 // Importa tus datos (simulando una API)
 import { books as mockBooks } from '../data/books'; 
@@ -14,6 +14,8 @@ export const useLibraryStore = () => {
     const selectBook = (book) => {
         dispatch(setActiveBook(book));
     };
+
+    const clearActiveBookAction = () => dispatch(clearActiveBook());
 
     // ** LÓGICA DE CARGA **
     const startLoadingBooks = async () => {
@@ -31,10 +33,15 @@ export const useLibraryStore = () => {
     const startSavingBook = async (book) => {
         if (book._id) {
             // Actualizar libro existente
+            dispatch(onUpdateBook({...book}));
         } else {
             // Crear nuevo libro
             dispatch(onAddNewBook({ ...book, _id: new Date().getTime().toString() }));
         }
+    }
+
+    const startDeletingBook = () => {
+        dispatch(onDeleteBook())
     }
 
     
@@ -43,10 +50,13 @@ export const useLibraryStore = () => {
         books,
         activeBook,
         isLoading,
+        hasBookSelected: !!activeBook,
         
         // Methods
+        clearActiveBookAction,
         selectBook,
         startLoadingBooks,
-        startSavingBook
+        startSavingBook,
+        startDeletingBook
     }
 }

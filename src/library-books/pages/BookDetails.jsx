@@ -12,11 +12,7 @@ import { obtenerOrdinal } from '../../data/nrosOrdinales';
 export const BookDetails = () => {
   const { _id } = useParams();
   const navigate = useNavigate();
-  const {
-    books,
-    selectBook,
-    isLoading,
-  } = useLibraryStore();
+  const { books, selectBook, isLoading, startDeletingBook, hasBookSelected } = useLibraryStore();
 
   const book = books.find((b) => String(b._id || b.id) === String(_id));
 
@@ -48,6 +44,11 @@ export const BookDetails = () => {
     navigate("/register-book");
   };
 
+  const handleDelete = () => {
+    startDeletingBook();
+    navigate("/");
+  }
+
   return (
     <div className=" min-h-screen">
       <main className="main-content mx-auto">
@@ -63,12 +64,25 @@ export const BookDetails = () => {
               {"⭐".repeat(Math.round(book.bookScore))}{" "}
               <span className="text-gray-700">{book.bookScore.toFixed(1)}</span>
             </p>
-            <button
-              className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
-              onClick={() => onEditClick(book)}
-            >
-              Editar
-            </button>
+            <div className="book-buttons flex gap-2 flex-wrap justify-center mt-2">
+              <button
+                className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+                onClick={() => onEditClick(book)}
+              >
+                Editar
+              </button>
+
+              <button
+                className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+                style={{
+                  display: hasBookSelected ? '': 'none'
+                }}
+                onClick={() => handleDelete(book)}
+              >
+                Eliminar
+              </button>
+            </div>
+
             {/* <div className="book-buttons flex gap-2 flex-wrap justify-center mt-2">
               <button className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition">
                 Compartir
