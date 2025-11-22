@@ -54,7 +54,7 @@ export const BookDetails = () => {
       <main className="main-content mx-auto">
         <div className="book-details-container flex flex-col lg:flex-row gap-8">
           {/* Portada y botones */}
-          <div className="book-cover-section bg-white p-4 rounded-[10px] shadow w-full max-w-xs mx-auto lg:mx-0 flex flex-col items-center">
+          <div className="book-cover-section bg-white p-4 rounded-[10px] shadow w-full max-w-xs mx-auto lg:mx-0 flex-1 items-center">
             <img
               src={book.cover}
               alt={`Portada de ${book.title}`}
@@ -66,16 +66,16 @@ export const BookDetails = () => {
             </p>
             <div className="book-buttons flex gap-2 flex-wrap justify-center mt-2">
               <button
-                className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+                className="w-24 px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
                 onClick={() => onEditClick(book)}
               >
                 Editar
               </button>
 
               <button
-                className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
+                className="w-24 px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-700 transition"
                 style={{
-                  display: hasBookSelected ? '': 'none'
+                  display: hasBookSelected ? "" : "none",
                 }}
                 onClick={() => handleDelete(book)}
               >

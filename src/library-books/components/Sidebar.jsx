@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-//import { useLibraryStore } from '../../hooks';
+import { useLibraryStore } from '../../hooks';
 
 export const Sidebar = ({ onClose }) => {
-    //const { clearActiveBookAction } = useLibraryStore();
+    const { clearActiveBookAction } = useLibraryStore();
 
     return (
       <aside className="fixed top-0 left-0 z-[1100] h-screen bg-white text-gray-700 pt-8 shadow-[2px_0_8px_rgba(0,0,0,0.1)] flex flex-col justify-between items-center w-full max-w-xs sm:max-w-[250px] sm:w-[250px] transition-all duration-300">
@@ -38,9 +38,9 @@ export const Sidebar = ({ onClose }) => {
           <Link
             to="/register-book"
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
-            // onClick={() => {
-            //   clearActiveBookAction();
-            // }}
+            onClick={() => {
+              clearActiveBookAction();
+            }}
           >
             <span className="icon mr-2.5 text-[1.5rem]">📑</span> Registrar
             libro

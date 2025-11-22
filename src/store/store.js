@@ -9,4 +9,5 @@ export const store = configureStore({
         libraryBooks: libraryBooksSlice.reducer,
         quotes: quotesSlice.reducer,
     },
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({})
 });

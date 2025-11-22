@@ -36,7 +36,7 @@ export const useLibraryStore = () => {
             dispatch(onUpdateBook({...book}));
         } else {
             // Crear nuevo libro
-            dispatch(onAddNewBook({ ...book, _id: new Date().getTime().toString() }));
+            dispatch(onAddNewBook({ ...book, _id: Number(new Date().getTime()) }));
         }
     }
 

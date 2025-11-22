@@ -26,7 +26,7 @@ export const libraryBooksSlice = createSlice({
                     return payload;
                 }
                 return book;
-            })
+            });
         },
         clearActiveBook: (state) => {
             state.activeBook = null;
