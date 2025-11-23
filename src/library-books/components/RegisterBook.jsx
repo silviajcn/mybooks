@@ -20,6 +20,7 @@ const initialState = {
   author: "",
   editorial: "",
   nroPages: 0,
+  pagesRead: 0,
   initialDate: "",
   endDate: "",
   cover: "",
@@ -96,7 +97,7 @@ export const RegisterBook = () => {
     setFormValues((prev) => ({
       ...prev,
       [name]:
-        name === "nroPages" || name === "bookScore" || name === "numberReading"
+        name === "nroPages" || name === "bookScore" || name === "numberReading" || name === "pagesRead"
           ? Number(value)
           : value,
     }));
@@ -128,11 +129,35 @@ export const RegisterBook = () => {
       }
     }
 
-    console.log("Libro registrado:", formValues);
+    // Antes de guardar, mapear los valores "option" (clave) a su label "value"
+    // para que el objeto guardado tenga los textos legibles que usa BookDetails.
+    const mapOptionToValue = (options, opt) => {
+      if (!opt) return opt;
+      const found = options.find(
+        (o) =>
+          String(o.option) === String(opt) || String(o.value) === String(opt)
+      );
+      return found ? found.value : opt;
+    };
+
+    const payload = {
+      ...formValues,
+      genre: mapOptionToValue(genresOptions, formValues.genre),
+      publicationDate: mapOptionToValue(
+        publicationYears,
+        formValues.publicationDate
+      ),
+      format: mapOptionToValue(formatOptions, formValues.format),
+      origin: mapOptionToValue(originOptions, formValues.origin),
+      originPlace: mapOptionToValue(placeOriginOptions, formValues.originPlace),
+      status: mapOptionToValue(statusOptions, formValues.status),
+    };
+
+    console.log("Guardando libro (payload):", payload);
 
     // Reiniciar el formulario
     setFormValues(initialState);
-    await startSavingBook(formValues);
+    await startSavingBook(payload);
     setFormSubmitted(false);
 
     if (activeBook !== null) {
@@ -450,6 +475,20 @@ export const RegisterBook = () => {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1 text-gray-700">
+                  Actualizar progreso (páginas leídas)
+                </label>
+                <input
+                  type="number"
+                  name="pagesRead"
+                  value={formValues.pagesRead}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-150"
+                  min={0}
+                  max={formValues.nroPages}
+                />
+              </div>
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Origen

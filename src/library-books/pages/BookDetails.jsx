@@ -200,6 +200,24 @@ export const BookDetails = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2">
                   <div className="col-span-1">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Estado
+                    </p>
+                    <p className="text-sm font-normal text-gray-900 mt-0.5">
+                      {book.status}
+                    </p>
+                  </div>
+
+                  <div className="col-span-1">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Calificación
+                    </p>
+                    <p className="text-sm font-normal text-gray-900 mt-0.5">
+                      5
+                    </p>
+                  </div>
+
+                  <div className="col-span-1">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nro. lectura
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
@@ -258,15 +276,6 @@ export const BookDetails = () => {
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
                       <b>0</b> de <b>{book.nroPages}</b> páginas
-                    </p>
-                  </div>
-
-                  <div className="col-span-1">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Calificación
-                    </p>
-                    <p className="text-sm font-normal text-gray-900 mt-0.5">
-                      5
                     </p>
                   </div>
                 </div>

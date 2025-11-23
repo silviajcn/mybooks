@@ -23,12 +23,12 @@ export const Sidebar = ({ onClose }) => {
           >
             <span className="icon mr-2.5 text-[1.5rem]">🏠</span> Inicio
           </Link>
-          <Link
+          {/* <Link
             to="/search"
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">🔍</span> Buscar
-          </Link>
+          </Link> */}
           <Link
             to="/my-bookshelf"
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
