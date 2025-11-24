@@ -10,6 +10,8 @@ import {
   statusOptions,
   placeOriginOptions
 } from '../../data/options';
+import { authorsOptions } from "../../data/authors";
+import { editorialsOptions } from '../../data/editorials';
 import { useLibraryStore } from '../../hooks';
 import { createSlug, toISODate } from "../../helpers";
 
@@ -50,15 +52,20 @@ export const RegisterBook = () => {
         if (!val) return "";
         const found = options.find(
           (o) =>
-            String(o.option) === String(val) || String(o.value) === String(val)
+            String(o.option) === String(val) ||
+            String(o.value) === String(val) ||
+            String(o.author) === String(val) ||
+            String(o.editorial) === String(val)
         );
-        return found ? found.option : val;
+        if (!found) return val;
+        return (
+          found.option ?? found.value ?? found.author ?? found.editorial ?? val
+        );
       };
 
       setFormValues({
         ...initialState,
         ...activeBook,
-        // Normalizar selects para que coincidan con los value/option de los <select>
         genre: normalizeSelect(activeBook.genre, genresOptions),
         publicationDate: normalizeSelect(
           activeBook.publicationDate,
@@ -70,8 +77,9 @@ export const RegisterBook = () => {
           activeBook.originPlace,
           placeOriginOptions
         ),
+        author: normalizeSelect(activeBook.author, authorsOptions),
+        editorial: normalizeSelect(activeBook.editorial, editorialsOptions),
         status: normalizeSelect(activeBook.status, statusOptions),
-        // Formatear fechas para inputs type="date"
         initialDate: toISODate(activeBook.initialDate),
         endDate: toISODate(activeBook.endDate),
       });
@@ -135,9 +143,16 @@ export const RegisterBook = () => {
       if (!opt) return opt;
       const found = options.find(
         (o) =>
-          String(o.option) === String(opt) || String(o.value) === String(opt)
+          String(o.option) === String(opt) ||
+          String(o.value) === String(opt) ||
+          String(o.author) === String(opt) ||
+          String(o.editorial) === String(opt)
       );
-      return found ? found.value : opt;
+      if (!found) return opt;
+      // retornar la etiqueta legible que usa BookDetails
+      return (
+        found.value ?? found.author ?? found.editorial ?? found.option ?? opt
+      );
     };
 
     const payload = {
@@ -151,6 +166,8 @@ export const RegisterBook = () => {
       origin: mapOptionToValue(originOptions, formValues.origin),
       originPlace: mapOptionToValue(placeOriginOptions, formValues.originPlace),
       status: mapOptionToValue(statusOptions, formValues.status),
+      author: mapOptionToValue(authorsOptions, formValues.author),
+      editorial: mapOptionToValue(editorialsOptions, formValues.editorial),
     };
 
     console.log("Guardando libro (payload):", payload);
@@ -259,26 +276,40 @@ export const RegisterBook = () => {
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Autor
                     </label>
-                    <input
-                      type="text"
+                    <select
+                      id="author"
                       name="author"
                       value={formValues.author}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
                       required
-                    />
+                      className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition duration-150"
+                    >
+                      <option value="">Selecciona</option>
+                      {authorsOptions.map((author) => (
+                        <option key={author.id} value={author.author}>
+                          {author.author}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Editorial
                     </label>
-                    <input
-                      type="text"
+                    <select
+                      id="editorial"
                       name="editorial"
                       value={formValues.editorial}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
-                    />
+                      className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition duration-150"
+                    >
+                      <option value="">Selecciona</option>
+                      {editorialsOptions.map((editorial) => (
+                        <option key={editorial.id} value={editorial.editorial}>
+                          {editorial.editorial}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -424,7 +455,6 @@ export const RegisterBook = () => {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-150"
                   min={0}
-                  max={5}
                 />
               </div>
             </div>

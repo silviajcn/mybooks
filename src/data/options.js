@@ -63,3 +63,8 @@ export const statusOptions = [
     { id: 6, option: "relectura", value: "Relectura" },
     { id: 7, option: "lista_deseo", value: "Lista de deseos" }
 ];
+
+export const gender = [
+    { id: 1, option: "masculino", value: "Masculino" },
+    { id: 2, option: "femenino", value: "Femenino" },
+];

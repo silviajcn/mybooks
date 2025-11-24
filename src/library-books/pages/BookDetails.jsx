@@ -275,7 +275,8 @@ export const BookDetails = () => {
                       Paginas leídas
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
-                      <b>{book.pagesRead}</b> de <b>{book.nroPages}</b> páginas
+                      <b>{book.pagesRead === 0 ? "0" : book.pagesRead}</b> de{" "}
+                      <b>{book.nroPages}</b> páginas
                     </p>
                   </div>
                 </div>
