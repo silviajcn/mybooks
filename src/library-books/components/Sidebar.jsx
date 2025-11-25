@@ -1,11 +1,19 @@
 import { Link } from 'react-router-dom';
-import { useLibraryStore } from '../../hooks';
+import { useLibraryStore, useScreenSize } from '../../hooks';
 
 export const Sidebar = ({ onClose }) => {
-    const { clearActiveBookAction } = useLibraryStore();
+  const { clearActiveBookAction } = useLibraryStore();
+  
+  const isMobile = useScreenSize(700); // 👈 Detectar si es móvil
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      onClose(); // 👈 Llama a onClose solo en pantallas pequeñas
+    }
+  };
 
     return (
-      <aside className="fixed top-0 left-0 z-[1100] h-screen bg-white text-gray-700 pt-8 shadow-[2px_0_8px_rgba(0,0,0,0.1)] flex flex-col justify-between items-center w-full max-w-xs sm:max-w-[250px] sm:w-[250px] transition-all duration-300">
+      <aside className="h-screen bg-white text-gray-700 pt-8 shadow-[2px_0_8px_rgba(0,0,0,0.1)] flex flex-col justify-between items-center w-full max-w-xs sm:max-w-[250px] sm:w-[250px] transition-all duration-300">
         <button
           className="absolute top-2 left-6 text-gray-200 hover:text-red-200 text-2xl cursor-pointer"
           onClick={onClose}
@@ -19,18 +27,21 @@ export const Sidebar = ({ onClose }) => {
         <nav className="flex flex-col w-full">
           <Link
             to="/"
+            onClick={handleLinkClick}
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">🏠</span> Inicio
           </Link>
           {/* <Link
             to="/search"
+            onClick={handleLinkClick}
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">🔍</span> Buscar
           </Link> */}
           <Link
             to="/my-bookshelf"
+            onClick={handleLinkClick}
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">📚</span> Mi Biblioteca
@@ -40,6 +51,7 @@ export const Sidebar = ({ onClose }) => {
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
             onClick={() => {
               clearActiveBookAction();
+              handleLinkClick();
             }}
           >
             <span className="icon mr-2.5 text-[1.5rem]">📑</span> Registrar
@@ -47,12 +59,14 @@ export const Sidebar = ({ onClose }) => {
           </Link>
           <Link
             to="/favorites"
+            onClick={handleLinkClick}
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">🩷</span> Favoritos
           </Link>
           <Link
             to="/contribute"
+            onClick={handleLinkClick}
             className="text-gray-600 text-[1.2rem] py-4 px-8 flex items-center transition hover:bg-gray-100"
           >
             <span className="icon mr-2.5 text-[1.5rem]">✍️</span> Contribuir

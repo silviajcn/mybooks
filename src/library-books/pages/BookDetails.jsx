@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLibraryStore } from '../../hooks';
 import { obtenerOrdinal } from '../../data/nrosOrdinales';
+import { authorsOptions } from '../../data/authors';
 
 // const statusColor = {
 //   Leído: "text-green-600 bg-green-100",
@@ -12,7 +13,8 @@ import { obtenerOrdinal } from '../../data/nrosOrdinales';
 export const BookDetails = () => {
   const { _id } = useParams();
   const navigate = useNavigate();
-  const { books, selectBook, isLoading, startDeletingBook, hasBookSelected } = useLibraryStore();
+  const { books, selectBook, isLoading, startDeletingBook, hasBookSelected } =
+    useLibraryStore();
 
   const book = books.find((b) => String(b._id || b.id) === String(_id));
 
@@ -29,6 +31,22 @@ export const BookDetails = () => {
       <div className="text-center py-10 text-gray-600">No book selected</div>
     );
   }
+
+  // LÓGICA DE BÚSQUEDA DEL AUTOR:
+  const authorData = authorsOptions.find(
+    (author) => author.author === book.author
+  );
+
+  // Variables a usar en el renderizado
+  const authorNationality = authorData ? authorData.nationality : "Desconocida";
+  const authorGender = authorData ? authorData.gender : "Desconocido";
+  const authorPhoto = authorData
+    ? authorData.authorPhoto
+    : "https://media.istockphoto.com/id/1458683533/es/vector/signo-de-interrogaci%C3%B3n-en-persona-cabeza-icono-vector-como-desconocido-secreto-an%C3%B3nimo.jpg?s=612x612&w=0&k=20&c=sG5GQQKtxiqCAisySy8gDe5FDJdSaIJVLHzZTrRxVtQ=";
+  
+  const otherBooksByAuthor = books.filter(
+    (b) => b.author === book.author && String(b._id || b.id) !== String(_id)
+  );
 
   const AUTHOR_BIO_MAX_LENGTH = 200;
   const authorBio =
@@ -47,14 +65,14 @@ export const BookDetails = () => {
   const handleDelete = () => {
     startDeletingBook();
     navigate("/");
-  }
+  };
 
   return (
     <div className=" min-h-screen">
       <main className="main-content mx-auto">
         <div className="book-details-container flex flex-col lg:flex-row gap-8">
           {/* Portada y botones */}
-          <div className="book-cover-section bg-white p-4 rounded-[10px] shadow w-full max-w-xs mx-auto lg:mx-0 flex-1 items-center">
+          <div className="book-cover-section bg-white p-4 rounded-[10px] shadow w-full mx-auto max-w-full  lg:max-w-xs lg:mx-0 lg:flex-none items-center">
             <img
               src={book.cover}
               alt={`Portada de ${book.title}`}
@@ -289,8 +307,7 @@ export const BookDetails = () => {
             {/* Imagen del Autor (Cuadrada y Centrada) */}
             <div className="mb-4 flex justify-center">
               <img
-                src="https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcRMPLvdJgTHoxVnvzmv8qvBph6pasaVCCjX6mIW2XYcMNVcqLONbe0SHMganfOPTzuvftqfrNlqmZhHE8eezJk9BMpHPKqHouF10eSvwQ"
-                alt="Foto del Autor"
+                src={authorPhoto}
                 className="author-photo w-32 h-32 object-cover rounded-lg flex-shrink-0 border-4 border-[#e7d7c9] shadow-md"
               />
             </div>
@@ -311,13 +328,13 @@ export const BookDetails = () => {
                     Nacionalidad:
                   </span>
                   <span className="ml-1 font-normal text-gray-600">
-                    Argentina
+                    {authorNationality}
                   </span>
                 </p>
                 <p>
                   <span className="font-semibold text-gray-800">Género:</span>
                   <span className="ml-1 font-normal text-gray-600">
-                    Femenino
+                    {authorGender}
                   </span>
                 </p>
               </div>
@@ -354,20 +371,29 @@ export const BookDetails = () => {
             {/* Otros Libros */}
             <div className="other-books-section pt-4">
               <h5 className="font-semibold text-gray-800 tracking-tight mb-3">
-                Otros Libros del Autor
+                Otros Libros de {book.author}:
               </h5>
 
-              <div className="flex gap-3 justify-center overflow-x-auto pb-1">
-                <img
-                  src="https://res.cloudinary.com/silviajcn/image/upload/v1751764253/DB_BOOKS/Amparo_D%C3%A1vila_-_Cuentos_reunidos_nzjaba.webp"
-                  className="mini-cover w-16 h-24 rounded shadow-md flex-shrink-0 object-cover"
-                  alt="Libro 1"
-                />
-                <img
-                  src="https://res.cloudinary.com/silviajcn/image/upload/v1751764253/DB_BOOKS/Amparo_D%C3%A1vila_-_Cuentos_reunidos_nzjaba.webp"
-                  className="mini-cover w-16 h-24 rounded shadow-md flex-shrink-0 object-cover"
-                  alt="Libro 2"
-                />
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2">
+                {/* Usamos map para iterar sobre los libros filtrados */}
+                {otherBooksByAuthor.length > 0 ? (
+                  otherBooksByAuthor.map((otherBook) => (
+                    <img
+                      key={otherBook._id || otherBook.id}
+                      src={otherBook.cover}
+                      className="mini-cover w-16 h-24 rounded shadow-md flex-shrink-0 object-cover cursor-pointer hover:shadow-lg transition"
+                      alt={`Portada de ${otherBook.title}`}
+                      onClick={() =>
+                        navigate(`/book/${otherBook._id || otherBook.id}`)
+                      }
+                      title={otherBook.title}
+                    />
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic py-2">
+                    No tienes otros libros registrados de este autor.
+                  </p>
+                )}
               </div>
             </div>
           </aside>
