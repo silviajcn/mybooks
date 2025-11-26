@@ -239,7 +239,11 @@ export const BookDetails = () => {
                       Nro. lectura
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
-                      ({book.numberReading}) {ordinalDeLectura} lectura
+                      {
+                        Number(book.numberReading) === 0
+                          ? "0"
+                          : `(${book.numberReading}) ${ordinalDeLectura} lectura`
+                      }
                     </p>
                   </div>
 
@@ -371,30 +375,34 @@ export const BookDetails = () => {
             {/* Otros Libros */}
             <div className="other-books-section pt-4">
               <h5 className="font-semibold text-gray-800 tracking-tight mb-3">
-                Otros Libros de {book.author}:
+                Otros Libros de {book.author} 📚
               </h5>
 
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2">
-                {/* Usamos map para iterar sobre los libros filtrados */}
-                {otherBooksByAuthor.length > 0 ? (
-                  otherBooksByAuthor.map((otherBook) => (
-                    <img
+              {/* Contenedor de las portadas: Grid Responsivo */}
+              {otherBooksByAuthor.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-3 justify-items-center">
+                  {otherBooksByAuthor.map((otherBook) => (
+                    <div
                       key={otherBook._id || otherBook.id}
-                      src={otherBook.cover}
-                      className="mini-cover w-16 h-24 rounded shadow-md flex-shrink-0 object-cover cursor-pointer hover:shadow-lg transition"
-                      alt={`Portada de ${otherBook.title}`}
-                      onClick={() =>
-                        navigate(`/book/${otherBook._id || otherBook.id}`)
-                      }
-                      title={otherBook.title}
-                    />
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 italic py-2">
-                    No tienes otros libros registrados de este autor.
-                  </p>
-                )}
-              </div>
+                      className="w-16 h-24 rounded shadow-md cursor-pointer hover:shadow-lg transition relative"
+                    >
+                      <img
+                        src={otherBook.cover}
+                        className="mini-cover w-full h-full object-cover rounded"
+                        alt={`Portada de ${otherBook.title}`}
+                        onClick={() =>
+                          navigate(`/book/${otherBook._id || otherBook.id}`)
+                        }
+                        title={otherBook.title}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic py-2 text-center w-full">
+                  No tienes otros libros registrados de este autor.
+                </p>
+              )}
             </div>
           </aside>
         </div>

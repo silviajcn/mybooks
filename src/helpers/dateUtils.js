@@ -22,3 +22,15 @@ export const toISODate = (d) => {
   // 3. Si viene 'YYYY' o algún otro string, devolver tal cual
   return dateString;
 };
+
+
+/**
+ * Retorna la fecha actual en formato "dd/MM/yyyy".
+ */
+export const getCurrentDateFormatted = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}/${month}/${year}`; // Ejemplo: "25/11/2025"
+};

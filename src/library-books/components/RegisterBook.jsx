@@ -13,7 +13,7 @@ import {
 import { authorsOptions } from "../../data/authors";
 import { editorialsOptions } from '../../data/editorials';
 import { useLibraryStore } from '../../hooks';
-import { createSlug, toISODate } from "../../helpers";
+import { createSlug, toISODate, getCurrentDateFormatted } from "../../helpers";
 
 const initialState = {
   ISBN: "",
@@ -96,19 +96,94 @@ export const RegisterBook = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let rawValue = value;
+    let updates = {};
 
     // Si el campo cambiado es la portada, restablecer el estado de error de la imagen
     if (name === "cover") {
       setIsImageError(false);
     }
 
+    // Conversión a número para campos numéricos
+    if (
+      name === "nroPages" ||
+      name === "bookScore" ||
+      name === "numberReading" ||
+      name === "pagesRead"
+    ) {
+      rawValue = Number(value);
+    }
+
+    updates[name] = rawValue;
+
+    if (name === "status") {
+      if (value === "read") {
+        updates.pagesRead = formValues.nroPages; 
+        if (
+          formValues.status === "reading" ||
+          formValues.status === "Leyendo"
+        ) {
+          updates.endDate = getCurrentDateFormatted();
+        }
+      } else if (formValues.status === "read" && value !== "read") {
+        updates.endDate = "";
+        updates.pagesRead = formValues.nroPages;
+      }
+    }
+
+    if (name === "nroPages" && formValues.status === "read") {
+      updates.pagesRead = rawValue;
+    }
+
     setFormValues((prev) => ({
       ...prev,
+      ...updates,
       [name]:
-        name === "nroPages" || name === "bookScore" || name === "numberReading" || name === "pagesRead"
+        name === "nroPages" ||
+        name === "bookScore" ||
+        name === "numberReading" ||
+        name === "pagesRead"
           ? Number(value)
           : value,
     }));
+
+    /*setFormValues((prev) => {
+      let finalUpdates = { ...updates }; // Copiamos las actualizaciones iniciales
+
+      // Si el campo que cambió fue 'status'
+      if (name === "status") {
+        const newStatus = rawValue;
+
+        // A. Si el nuevo estado es 'Leído' (asumimos clave 'read')
+        if (newStatus === "read") {
+          // 1. Forzar pagesRead al total de páginas
+          finalUpdates.pagesRead = prev.nroPages;
+
+          // 2. Guardar la fecha de hoy si el estado anterior (prev.status) era 'Leyendo'
+          //    Verificamos ambas posibilidades (la clave 'reading' o la etiqueta 'Leyendo')
+          if (prev.status === "reading" || prev.status === "Leyendo") {
+            finalUpdates.endDate = getCurrentDateFormatted();
+          }
+        }
+
+        // B. Si el nuevo estado NO es 'read' y el anterior SÍ lo era
+        else if (prev.status === "read") {
+          // Limpiar la fecha fin si se revierte el estado
+          finalUpdates.endDate = "";
+        }
+      }
+
+      // C. Si el campo que cambió fue 'nroPages'
+      else if (name === "nroPages" && prev.status === "read") {
+        // Si el libro está Leído, y se cambian las páginas totales, actualizar páginas leídas.
+        finalUpdates.pagesRead = rawValue;
+      }
+
+      return {
+        ...prev,
+        ...finalUpdates,
+      };
+    });*/
   };
 
   const onSubmit = async (e) => {
@@ -169,6 +244,10 @@ export const RegisterBook = () => {
       author: mapOptionToValue(authorsOptions, formValues.author),
       editorial: mapOptionToValue(editorialsOptions, formValues.editorial),
     };
+
+    if (formValues.status === "read" || payload.status === "Leído") {
+      payload.pagesRead = formValues.nroPages;
+    }
 
     console.log("Guardando libro (payload):", payload);
 
