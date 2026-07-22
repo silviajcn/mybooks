@@ -6,3 +6,4 @@ export * from './pages/BookDetails';
 export * from './pages/HomePage';
 export * from './pages/LibraryBooksPage';
 export * from './pages/MyBookshelf';
+export * from './components/AuthorSeccion';

@@ -1,7 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useLibraryStore } from '../../hooks';
-import { obtenerOrdinal } from '../../data/nrosOrdinales';
-import { authorsOptions } from '../../data/authors';
+import { useParams, useNavigate } from "react-router-dom";
+import { useLibraryStore } from "../../hooks";
+import { obtenerOrdinal } from "../../data/nrosOrdinales";
+import { authorsOptions } from "../../data/authors";
+import { AuthorSeccion } from "../";
 
 // const statusColor = {
 //   Leído: "text-green-600 bg-green-100",
@@ -32,21 +33,43 @@ export const BookDetails = () => {
     );
   }
 
-  // LÓGICA DE BÚSQUEDA DEL AUTOR:
-  const authorData = authorsOptions.find(
-    (author) => author.author === book.author
-  );
+  // Aseguramos que book.author es un array y tomamos el primer autor (si existe)
+  const primaryAuthorName =
+    Array.isArray(book.author) && book.author.length > 0
+      ? book.author[0]
+      : null;
 
-  // Variables a usar en el renderizado
+  // LÓGICA DE BÚSQUEDA DEL AUTOR:
+  // Buscamos la información detallada del autor principal en authorsOptions.
+  const authorData = primaryAuthorName
+    ? authorsOptions.find(
+        (authorOption) => authorOption.author === primaryAuthorName
+      )
+    : null;
+
+
+  // Variables a usar en el renderizado (basadas en el autor principal)
   const authorNationality = authorData ? authorData.nationality : "Desconocida";
   const authorGender = authorData ? authorData.gender : "Desconocido";
   const authorPhoto = authorData
     ? authorData.authorPhoto
     : "https://media.istockphoto.com/id/1458683533/es/vector/signo-de-interrogaci%C3%B3n-en-persona-cabeza-icono-vector-como-desconocido-secreto-an%C3%B3nimo.jpg?s=612x612&w=0&k=20&c=sG5GQQKtxiqCAisySy8gDe5FDJdSaIJVLHzZTrRxVtQ=";
-  
-  const otherBooksByAuthor = books.filter(
-    (b) => b.author === book.author && String(b._id || b.id) !== String(_id)
-  );
+
+  // Autores del libro actual que estamos viendo
+  const currentBookAuthors = Array.isArray(book.author) ? book.author : [];
+
+  const otherBooksByAuthor = books.filter((b) => {
+    // Excluir el libro actual por su ID
+    if (String(b._id || b.id) === String(_id)) {
+      return false;
+    } // Obtener los autores del libro en la iteración
+
+    const comparingBookAuthors = Array.isArray(b.author) ? b.author : []; // Comprobar si hay *algún* autor en común entre el libro actual y el libro comparado
+
+    return currentBookAuthors.some((authorName) =>
+      comparingBookAuthors.includes(authorName)
+    );
+  });
 
   const AUTHOR_BIO_MAX_LENGTH = 200;
   const authorBio =
@@ -65,6 +88,26 @@ export const BookDetails = () => {
   const handleDelete = () => {
     startDeletingBook();
     navigate("/");
+  };
+
+  // En el cuerpo de tu componente, antes del return
+  const formatAuthors = (authors) => {
+    if (!authors || authors.length === 0) {
+      return "Autor desconocido";
+    }
+
+    const count = authors.length;
+
+    if (count === 1) {
+      return authors[0]; // Solo un autor
+    }
+    if (count === 2) {
+      return authors.join(" · "); // "Autor A y Autor B"
+    } // Para 3 o más: "Autor A, Autor B, y Autor C"
+
+    const lastAuthor = authors[count - 1];
+    const otherAuthors = authors.slice(0, count - 1).join(" · ");
+    return `${otherAuthors} · ${lastAuthor}`;
   };
 
   return (
@@ -125,7 +168,7 @@ export const BookDetails = () => {
               </h3>
             )}
             <p className="book-author-large text-gray-600 mb-2 font-semibold">
-              {book.author}
+              {formatAuthors(book.author)}
             </p>
 
             <div className="book-rating-section flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
@@ -230,7 +273,7 @@ export const BookDetails = () => {
                       Calificación
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
-                      5
+                      {book.bookScore}
                     </p>
                   </div>
 
@@ -239,11 +282,9 @@ export const BookDetails = () => {
                       Nro. lectura
                     </p>
                     <p className="text-sm font-normal text-gray-900 mt-0.5">
-                      {
-                        Number(book.numberReading) === 0
-                          ? "0"
-                          : `(${book.numberReading}) ${ordinalDeLectura} lectura`
-                      }
+                      {Number(book.numberReading) === 0
+                        ? "0"
+                        : `(${book.numberReading}) ${ordinalDeLectura} lectura`}
                     </p>
                   </div>
 
@@ -408,7 +449,7 @@ export const BookDetails = () => {
         </div>
 
         {/* Citas y Reseñas */}
-        <div className="book-quotes-and-reviews bg-white p-4 rounded-[10px] shadow border border-gray-100 flex flex-col gap-8 mt-6 lg:flex-row lg:gap-8">
+        {/* <div className="book-quotes-and-reviews bg-white p-4 rounded-[10px] shadow border border-gray-100 flex flex-col gap-8 mt-6 lg:flex-row lg:gap-8"> */}
           {/* Sección de Citas */}
           {/* <div className="book-quotes-section bg-white p-4 rounded-xl shadow-lg w-full max-w-sm mx-auto lg:w-64 text-center border border-gray-100">
             <h3 className="font-semibold mb-3 text-lg text-gray-800 border-b pb-2">
@@ -468,16 +509,16 @@ export const BookDetails = () => {
           </div> */}
 
           {/* Sección de Biografía del Autor y Reseñas */}
-          <div className="community-info-section bg-white p-0 rounded-xl w-full max-w-sm mx-auto lg:flex-1 lg:max-w-none lg:mx-0">
+          {/* <div className="community-info-section bg-white p-0 rounded-xl w-full max-w-sm mx-auto lg:flex-1 lg:max-w-none lg:mx-0"> */}
             {/* SECCIÓN DE RESEÑAS */}
-            <div className="mt-4 pt-4 border-t">
+            {/* <div className="mt-4 pt-4 border-t">
               <h4 className="font-bold text-xl text-gray-800 mb-3">
                 Reseñas de la Comunidad
-              </h4>
+              </h4> */}
               {/* Contenedor de las reseñas con un estilo definido */}
-              <div className="bg-white p-3 space-y-3 rounded-lg border border-indigo-200 shadow-inner">
+              {/* <div className="bg-white p-3 space-y-3 rounded-lg border border-indigo-200 shadow-inner"> */}
                 {/* Reseña 1 */}
-                <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 shadow-sm">
+                {/* <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 shadow-sm">
                   <p className="text-gray-700 italic text-sm leading-snug mb-1">
                     "Una lectura que te cambiará la vida. Macondo es un universo
                     aparte."
@@ -485,10 +526,10 @@ export const BookDetails = () => {
                   <p className="text-right text-xs font-semibold text-indigo-600 mt-1">
                     - Usuario123 (5 ⭐)
                   </p>
-                </div>
+                </div> */}
 
                 {/* Reseña 2 */}
-                <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 shadow-sm">
+                {/* <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 shadow-sm">
                   <p className="text-gray-700 italic text-sm leading-snug mb-1">
                     "Un poco denso al principio, pero la recompensa es enorme."
                   </p>
@@ -496,15 +537,15 @@ export const BookDetails = () => {
                     - LectorFiel (4 ⭐)
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Botón de acción mejorado */}
-              <button className="w-full mt-4 bg-[#EFE6DD] text-[1rem] text-gray-800 font-bold py-2.5 rounded-lg shadow-md hover:bg-[#e8d8c8]  transition duration-300 transform hover:scale-[1.01] text-sm">
+              {/* <button className="w-full mt-4 bg-[#EFE6DD] text-[1rem] text-gray-800 font-bold py-2.5 rounded-lg shadow-md hover:bg-[#e8d8c8]  transition duration-300 transform hover:scale-[1.01] text-sm">
                 Ver todas las reseñas (42)
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
       </main>
     </div>
   );

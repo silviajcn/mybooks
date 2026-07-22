@@ -13,13 +13,112 @@ import {
 import { authorsOptions } from "../../data/authors";
 import { editorialsOptions } from '../../data/editorials';
 import { useLibraryStore } from '../../hooks';
-import { createSlug, toISODate, getCurrentDateFormatted } from "../../helpers";
+import {
+  createSlug,
+  toLocalDateFormat,
+  getCurrentDateFormatted,
+} from "../../helpers";
+import { AutorSelect } from './AutorSelect';
+
+const CUSTOM_OPTIONS_STORAGE_KEY = 'mybooks.customCatalogs.v1';
+
+const normalizeCatalogLabel = (value) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase();
+
+const mergeCatalogItems = (defaults = [], customItems = []) => {
+  const merged = [...defaults, ...(Array.isArray(customItems) ? customItems : [])];
+
+  return merged.filter((item, index, list) => {
+    const itemLabel = normalizeCatalogLabel(
+      item.author ?? item.editorial ?? item.value ?? item.option
+    );
+
+    return (
+      list.findIndex((entry) => {
+        const entryLabel = normalizeCatalogLabel(
+          entry.author ?? entry.editorial ?? entry.value ?? entry.option
+        );
+
+        return entryLabel === itemLabel;
+      }) === index
+    );
+  });
+};
+
+const buildCatalogState = () => {
+  const defaults = {
+    authors: authorsOptions,
+    editorials: editorialsOptions,
+    genres: genresOptions,
+    origins: originOptions,
+    places: placeOriginOptions,
+  };
+
+  if (typeof window === 'undefined') {
+    return defaults;
+  }
+
+  try {
+    const storedCatalogs = JSON.parse(
+      window.localStorage.getItem(CUSTOM_OPTIONS_STORAGE_KEY) ?? '{}'
+    );
+
+    return {
+      authors: mergeCatalogItems(defaults.authors, storedCatalogs.authors),
+      editorials: mergeCatalogItems(
+        defaults.editorials,
+        storedCatalogs.editorials
+      ),
+      genres: mergeCatalogItems(defaults.genres, storedCatalogs.genres),
+      origins: mergeCatalogItems(defaults.origins, storedCatalogs.origins),
+      places: mergeCatalogItems(defaults.places, storedCatalogs.places),
+    };
+  } catch {
+    return defaults;
+  }
+};
+
+const createCustomCatalogItem = (field, value) => {
+  const cleanValue = String(value ?? '').trim();
+
+  if (!cleanValue) {
+    return null;
+  }
+
+  const id = Date.now() + Math.floor(Math.random() * 1000);
+
+  if (field === 'authors') {
+    return {
+      id,
+      author: cleanValue,
+      nationality: '',
+      gender: '',
+      authorPhoto: '',
+    };
+  }
+
+  if (field === 'editorials') {
+    return {
+      id,
+      editorial: cleanValue,
+      logo: '',
+    };
+  }
+
+  return {
+    id,
+    option: createSlug(cleanValue),
+    value: cleanValue,
+  };
+};
 
 const initialState = {
   ISBN: "",
   title: "",
   subtitle: "",
-  author: "",
+  author: [],
   editorial: "",
   nroPages: 0,
   pagesRead: 0,
@@ -40,11 +139,27 @@ const initialState = {
 export const RegisterBook = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isImageError, setIsImageError] = useState(false); // Para manejar errores de carga de imagen
+  const [dynamicCatalogs, setDynamicCatalogs] = useState(buildCatalogState);
+  const [customOptionInputs, setCustomOptionInputs] = useState({
+    editorial: '',
+    genre: '',
+    origin: '',
+    originPlace: '',
+  });
   const { activeBook, startSavingBook, hasBookSelected } =
     useLibraryStore();
   const navigate = useNavigate();
 
   const [formValues, setFormValues] = useState(initialState);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(
+        CUSTOM_OPTIONS_STORAGE_KEY,
+        JSON.stringify(dynamicCatalogs)
+      );
+    }
+  }, [dynamicCatalogs]);
 
   useEffect(() => {
     if (activeBook !== null) {
@@ -63,25 +178,36 @@ export const RegisterBook = () => {
         );
       };
 
+      // Lógica para normalizar la propiedad 'author' a un array de claves.
+      const authorVal = activeBook.author;
+      const authorsArray = Array.isArray(authorVal)
+        ? authorVal
+        : authorVal
+        ? [authorVal]
+        : []; // Mapeamos cada autor para asegurarnos de que el valor cargado sea la clave/opción.
+      const normalizedAuthors = authorsArray.map((auth) =>
+        normalizeSelect(auth, dynamicCatalogs.authors)
+      );
+
       setFormValues({
         ...initialState,
         ...activeBook,
-        genre: normalizeSelect(activeBook.genre, genresOptions),
+        genre: normalizeSelect(activeBook.genre, dynamicCatalogs.genres),
         publicationDate: normalizeSelect(
           activeBook.publicationDate,
           publicationYears
         ),
         format: normalizeSelect(activeBook.format, formatOptions),
-        origin: normalizeSelect(activeBook.origin, originOptions),
+        origin: normalizeSelect(activeBook.origin, dynamicCatalogs.origins),
         originPlace: normalizeSelect(
           activeBook.originPlace,
-          placeOriginOptions
+          dynamicCatalogs.places
         ),
-        author: normalizeSelect(activeBook.author, authorsOptions),
-        editorial: normalizeSelect(activeBook.editorial, editorialsOptions),
+        author: normalizedAuthors,
+        editorial: normalizeSelect(activeBook.editorial, dynamicCatalogs.editorials),
         status: normalizeSelect(activeBook.status, statusOptions),
-        initialDate: toISODate(activeBook.initialDate),
-        endDate: toISODate(activeBook.endDate),
+        initialDate: toLocalDateFormat(activeBook.initialDate),
+        endDate: toLocalDateFormat(activeBook.endDate),
       });
     } else {
       setFormValues(initialState);
@@ -94,96 +220,126 @@ export const RegisterBook = () => {
     return formValues.title.length > 0 ? "" : "El título es obligatorio.";
   }, [formValues.title, formSubmitted]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    let rawValue = value;
-    let updates = {};
+  const addCustomOption = (field, rawValue) => {
+    const cleanValue = String(rawValue ?? '').trim();
 
-    // Si el campo cambiado es la portada, restablecer el estado de error de la imagen
-    if (name === "cover") {
-      setIsImageError(false);
+    if (!cleanValue) {
+      return;
     }
 
-    // Conversión a número para campos numéricos
-    if (
-      name === "nroPages" ||
-      name === "bookScore" ||
-      name === "numberReading" ||
-      name === "pagesRead"
-    ) {
-      rawValue = Number(value);
+    const item = createCustomCatalogItem(field, cleanValue);
+
+    if (!item) {
+      return;
     }
 
-    updates[name] = rawValue;
+    setDynamicCatalogs((prevCatalogs) => {
+      const nextList = mergeCatalogItems(prevCatalogs[field] ?? [], [item]);
 
-    if (name === "status") {
-      if (value === "read") {
-        updates.pagesRead = formValues.nroPages; 
-        if (
-          formValues.status === "reading" ||
-          formValues.status === "Leyendo"
-        ) {
-          updates.endDate = getCurrentDateFormatted();
-        }
-      } else if (formValues.status === "read" && value !== "read") {
-        updates.endDate = "";
-        updates.pagesRead = formValues.nroPages;
-      }
+      return {
+        ...prevCatalogs,
+        [field]: nextList,
+      };
+    });
+
+    if (field === 'editorials') {
+      setFormValues((prev) => ({
+        ...prev,
+        editorial: item.editorial,
+      }));
     }
 
-    if (name === "nroPages" && formValues.status === "read") {
-      updates.pagesRead = rawValue;
+    if (field === 'genres') {
+      setFormValues((prev) => ({
+        ...prev,
+        genre: item.option,
+      }));
     }
 
-    setFormValues((prev) => ({
+    if (field === 'origins') {
+      setFormValues((prev) => ({
+        ...prev,
+        origin: item.option,
+      }));
+    }
+
+    if (field === 'places') {
+      setFormValues((prev) => ({
+        ...prev,
+        originPlace: item.option,
+      }));
+    }
+
+    setCustomOptionInputs((prev) => ({
       ...prev,
-      ...updates,
-      [name]:
+      [field === 'editorials' ? 'editorial' : field === 'genres' ? 'genre' : field === 'origins' ? 'origin' : 'originPlace']: '',
+    }));
+  };
+
+  const handleChange = (e) => {
+    const { name } = e.target;
+    let value = e.target.value; // El valor puede ser un string (input, select) o un array (desde AutorSelect)
+    let updates = {}; // Manejo especial para el campo 'author' que viene como array de strings
+
+    if (name === 'author') {
+      const selectedAuthors = Array.isArray(value) ? value : [];
+      const newAuthors = selectedAuthors.filter(
+        (author) =>
+          !dynamicCatalogs.authors.some((entry) => entry.author === author)
+      );
+
+      if (newAuthors.length > 0) {
+        setDynamicCatalogs((prevCatalogs) => ({
+          ...prevCatalogs,
+          authors: mergeCatalogItems(
+            prevCatalogs.authors,
+            newAuthors.map((author) => createCustomCatalogItem('authors', author))
+          ),
+        }));
+      }
+
+      updates[name] = selectedAuthors;
+    } else {
+      let rawValue = value; // Si el campo cambiado es la portada, restablecer el estado de error de la imagen
+
+      if (name === "cover") {
+        setIsImageError(false);
+      } // Conversión a número para campos numéricos
+
+      if (
         name === "nroPages" ||
         name === "bookScore" ||
         name === "numberReading" ||
         name === "pagesRead"
-          ? Number(value)
-          : value,
-    }));
+      ) {
+        rawValue = Number(value);
+      }
 
-    /*setFormValues((prev) => {
-      let finalUpdates = { ...updates }; // Copiamos las actualizaciones iniciales
+      updates[name] = rawValue; // Lógica de estados/páginas (tu lógica original)
 
-      // Si el campo que cambió fue 'status'
       if (name === "status") {
-        const newStatus = rawValue;
-
-        // A. Si el nuevo estado es 'Leído' (asumimos clave 'read')
-        if (newStatus === "read") {
-          // 1. Forzar pagesRead al total de páginas
-          finalUpdates.pagesRead = prev.nroPages;
-
-          // 2. Guardar la fecha de hoy si el estado anterior (prev.status) era 'Leyendo'
-          //    Verificamos ambas posibilidades (la clave 'reading' o la etiqueta 'Leyendo')
-          if (prev.status === "reading" || prev.status === "Leyendo") {
-            finalUpdates.endDate = getCurrentDateFormatted();
+        if (value === "leido") {
+          updates.pagesRead = formValues.nroPages;
+          if (
+            formValues.status === "leyendo" ||
+            formValues.status === "Leyendo"
+          ) {
+            updates.endDate = getCurrentDateFormatted();
           }
-        }
-
-        // B. Si el nuevo estado NO es 'read' y el anterior SÍ lo era
-        else if (prev.status === "read") {
-          // Limpiar la fecha fin si se revierte el estado
-          finalUpdates.endDate = "";
+        } else if (formValues.status === "leido" && value !== "leido") {
+          updates.endDate = "";
+          updates.pagesRead = 0; // Se ajustó a 0 si ya no está 'leido'
         }
       }
 
-      // C. Si el campo que cambió fue 'nroPages'
-      else if (name === "nroPages" && prev.status === "read") {
-        // Si el libro está Leído, y se cambian las páginas totales, actualizar páginas leídas.
-        finalUpdates.pagesRead = rawValue;
+      if (name === "nroPages" && formValues.status === "leido") {
+        updates.pagesRead = rawValue;
       }
-
-      return {
-        ...prev,
-        ...finalUpdates,
-      };
-    });*/
+    }
+    setFormValues((prev) => ({
+      ...prev,
+      ...updates,
+    }));
   };
 
   const onSubmit = async (e) => {
@@ -230,22 +386,41 @@ export const RegisterBook = () => {
       );
     };
 
+    const mapMultipleOptionsToValue = (options, optArray) => {
+      if (!Array.isArray(optArray) || optArray.length === 0) return [];
+
+      return optArray.map((opt) => {
+        // Utilizamos la misma lógica de mapOptionToValue para cada elemento
+        const found = options.find(
+          (o) =>
+            String(o.option) === String(opt) ||
+            String(o.value) === String(opt) ||
+            String(o.author) === String(opt) ||
+            String(o.editorial) === String(opt)
+        );
+        if (!found) return opt; // retornar la etiqueta legible
+        return (
+          found.value ?? found.author ?? found.editorial ?? found.option ?? opt
+        );
+      });
+    };
+
     const payload = {
       ...formValues,
-      genre: mapOptionToValue(genresOptions, formValues.genre),
+      genre: mapOptionToValue(dynamicCatalogs.genres, formValues.genre),
       publicationDate: mapOptionToValue(
         publicationYears,
         formValues.publicationDate
       ),
       format: mapOptionToValue(formatOptions, formValues.format),
-      origin: mapOptionToValue(originOptions, formValues.origin),
-      originPlace: mapOptionToValue(placeOriginOptions, formValues.originPlace),
+      origin: mapOptionToValue(dynamicCatalogs.origins, formValues.origin),
+      originPlace: mapOptionToValue(dynamicCatalogs.places, formValues.originPlace),
       status: mapOptionToValue(statusOptions, formValues.status),
-      author: mapOptionToValue(authorsOptions, formValues.author),
-      editorial: mapOptionToValue(editorialsOptions, formValues.editorial),
+      author: mapMultipleOptionsToValue(dynamicCatalogs.authors, formValues.author),
+      editorial: mapOptionToValue(dynamicCatalogs.editorials, formValues.editorial),
     };
 
-    if (formValues.status === "read" || payload.status === "Leído") {
+    if (formValues.status === "leido" || payload.status === "Leído") {
       payload.pagesRead = formValues.nroPages;
     }
 
@@ -300,6 +475,7 @@ export const RegisterBook = () => {
               {/* Columna 1: Form Inputs (Aprox 70%) */}
               <div className="flex-1 lg:w-3/4 space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4">
+                  {/* ISBN */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       ISBN
@@ -313,6 +489,8 @@ export const RegisterBook = () => {
                       required
                     />
                   </div>
+
+                  {/* Título */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Título
@@ -337,6 +515,7 @@ export const RegisterBook = () => {
                   </div>
                 </div>
 
+                {/* Subtítulo */}
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-700">
                     Subtítulo
@@ -351,26 +530,22 @@ export const RegisterBook = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Autor (Usando react-select) */}{" "}
                   <div className="flex-1">
+                    {" "}
                     <label className="block text-sm font-medium mb-1 text-gray-700">
-                      Autor
+                       Autor(es) {" "}
                     </label>
-                    <select
-                      id="author"
+                    {" "}
+                    <AutorSelect
                       name="author"
                       value={formValues.author}
-                      onChange={handleChange}
-                      required
-                      className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition duration-150"
-                    >
-                      <option value="">Selecciona</option>
-                      {authorsOptions.map((author) => (
-                        <option key={author.id} value={author.author}>
-                          {author.author}
-                        </option>
-                      ))}
-                    </select>
+                      options={dynamicCatalogs.authors}
+                      onChange={handleChange} // Usamos la función handleChange
+                    />
+                    {" "}
                   </div>
+                  {/* Editorial */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Editorial
@@ -383,16 +558,37 @@ export const RegisterBook = () => {
                       className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition duration-150"
                     >
                       <option value="">Selecciona</option>
-                      {editorialsOptions.map((editorial) => (
+                      {dynamicCatalogs.editorials.map((editorial) => (
                         <option key={editorial.id} value={editorial.editorial}>
                           {editorial.editorial}
                         </option>
                       ))}
                     </select>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={customOptionInputs.editorial}
+                        onChange={(e) =>
+                          setCustomOptionInputs((prev) => ({
+                            ...prev,
+                            editorial: e.target.value,
+                          }))
+                        }
+                        placeholder="Agregar editorial"
+                        className="flex-1 border border-gray-300 rounded-[8px] px-3 py-2 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustomOption('editorials', customOptionInputs.editorial)}
+                        className="px-3 py-2 rounded-[8px] bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition duration-150"
+                      >
+                        Agregar
+                      </button>
+                    </div>
                   </div>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Género */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Género
@@ -405,13 +601,35 @@ export const RegisterBook = () => {
                       className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition duration-150"
                     >
                       <option value="">Selecciona</option>
-                      {genresOptions.map((genre) => (
+                      {dynamicCatalogs.genres.map((genre) => (
                         <option key={genre.id} value={genre.option}>
                           {genre.value}
                         </option>
                       ))}
                     </select>
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={customOptionInputs.genre}
+                        onChange={(e) =>
+                          setCustomOptionInputs((prev) => ({
+                            ...prev,
+                            genre: e.target.value,
+                          }))
+                        }
+                        placeholder="Agregar género"
+                        className="flex-1 border border-gray-300 rounded-[8px] px-3 py-2 bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustomOption('genres', customOptionInputs.genre)}
+                        className="px-3 py-2 rounded-[8px] bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition duration-150"
+                      >
+                        Agregar
+                      </button>
+                    </div>
                   </div>
+                  {/* Año publicación */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Año publicación
@@ -431,8 +649,8 @@ export const RegisterBook = () => {
                     </select>
                   </div>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Nro. de páginas */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       Nro. de páginas
@@ -446,6 +664,7 @@ export const RegisterBook = () => {
                       min={1}
                     />
                   </div>
+                  {/* URL de portada */}
                   <div className="flex-1">
                     <label className="block text-sm font-medium mb-1 text-gray-700">
                       URL de portada
@@ -489,8 +708,8 @@ export const RegisterBook = () => {
             <legend className="text-xl font-bold px-3 py-1 text-gray-700 bg-white border border-green-300/50 rounded-lg -ml-3 shadow-sm">
               Datos de lectura
             </legend>
-
             <div className="flex flex-col md:flex-row gap-4 mb-4">
+              {/* Estado */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Estado
@@ -509,6 +728,7 @@ export const RegisterBook = () => {
                   ))}
                 </select>
               </div>
+              {/* Puntaje */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Puntaje (0-5)
@@ -523,6 +743,7 @@ export const RegisterBook = () => {
                   max={5}
                 />
               </div>
+              {/* # Lecturas */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   # Lecturas
@@ -537,8 +758,8 @@ export const RegisterBook = () => {
                 />
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row gap-4 mb-4">
+              {/* Fecha inicio */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Fecha inicio
@@ -551,6 +772,7 @@ export const RegisterBook = () => {
                   className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer transition duration-150"
                 />
               </div>
+              {/* Fecha fin */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Fecha fin
@@ -563,6 +785,7 @@ export const RegisterBook = () => {
                   className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer transition duration-150"
                 />
               </div>
+              {/* Formato */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Formato
@@ -582,8 +805,8 @@ export const RegisterBook = () => {
                 </select>
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row gap-4 mb-4">
+              {/* Actualizar progreso */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Actualizar progreso (páginas leídas)
@@ -598,6 +821,7 @@ export const RegisterBook = () => {
                   max={formValues.nroPages}
                 />
               </div>
+              {/* Origen */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Origen
@@ -609,13 +833,35 @@ export const RegisterBook = () => {
                   className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer appearance-none transition duration-150"
                 >
                   <option value="">Selecciona</option>
-                  {originOptions.map((origin) => (
+                  {dynamicCatalogs.origins.map((origin) => (
                     <option key={origin.id} value={origin.option}>
                       {origin.value}
                     </option>
                   ))}
                 </select>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={customOptionInputs.origin}
+                    onChange={(e) =>
+                      setCustomOptionInputs((prev) => ({
+                        ...prev,
+                        origin: e.target.value,
+                      }))
+                    }
+                    placeholder="Agregar origen"
+                    className="flex-1 border border-gray-300 rounded-[8px] px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-150"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addCustomOption('origins', customOptionInputs.origin)}
+                    className="px-3 py-2 rounded-[8px] bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition duration-150"
+                  >
+                    Agregar
+                  </button>
+                </div>
               </div>
+              {/* Lugar o persona de origen */}
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Lugar o persona de origen
@@ -627,15 +873,37 @@ export const RegisterBook = () => {
                   className="w-full border border-gray-300 rounded-[8px] px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer appearance-none transition duration-150"
                 >
                   <option value="">Selecciona</option>
-                  {placeOriginOptions.map((place) => (
+                  {dynamicCatalogs.places.map((place) => (
                     <option key={place.id} value={place.option}>
                       {place.value}
                     </option>
                   ))}
                 </select>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={customOptionInputs.originPlace}
+                    onChange={(e) =>
+                      setCustomOptionInputs((prev) => ({
+                        ...prev,
+                        originPlace: e.target.value,
+                      }))
+                    }
+                    placeholder="Agregar lugar/persona"
+                    className="flex-1 border border-gray-300 rounded-[8px] px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-150"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addCustomOption('places', customOptionInputs.originPlace)}
+                    className="px-3 py-2 rounded-[8px] bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition duration-150"
+                  >
+                    Agregar
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* Reseña */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 Reseña
