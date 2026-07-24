@@ -1,205 +1,276 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../../hooks";
+import { createSlug } from "../../helpers";
 
-// =================================================================
-// 1. DATOS SIMULADOS DE LIBROS
-//    En una aplicación real, estos vendrían de tu estado/base de datos
-// =================================================================
-
-// =================================================================
-// 2. FUNCIÓN DE UTILIDAD PARA ESTILOS ALEATORIOS
-// =================================================================
-
-const getBookStyle = (seed) => {
-  // Genera un estilo pseudo-aleatorio basado en el ID para consistencia
-  const rand = (seed * 997) % 100;
-
-  // 1. Espesor (Ancho): 3 opciones
-  let widthClass;
-  if (rand < 30) {
-    widthClass = "w-[18px]"; // Delgado
-  } else if (rand < 80) {
-    widthClass = "w-[24px]"; // Normal
-  } else {
-    widthClass = "w-[30px]"; // Grueso
+const getStatusColor = (status) => {
+  switch (status) {
+    case "Leyendo":
+      return "#60a5fa";
+    case "Leído":
+      return "#4ade80";
+    case "Por leer":
+      return "#fb923c";
+    case "Abandonado":
+      return "#f87171";
+    case "Por comprar":
+      return "#c084fc";
+    case "Lista de deseos":
+      return "#facc15";
+    case "Relectura":
+      return "#b45309";
+    default:
+      return "#d6a46e";
   }
-
-  // 2. Altura (Solo variaciones muy sutiles, 3 opciones)
-  let heightClass;
-  if (rand < 20) {
-    heightClass = "h-[95%]";
-  } else if (rand < 90) {
-    heightClass = "h-[97%]";
-  } else {
-    heightClass = "h-[92%]";
-  }
-
-  // 3. Pequeña inclinación para darle un toque orgánico
-  const transformClass =
-    rand % 5 === 0
-      ? "transform rotate-[0.5deg]"
-      : rand % 7 === 0
-      ? "transform rotate-[-0.5deg]"
-      : "";
-
-  return { widthClass, heightClass, transformClass };
 };
 
-// =================================================================
-// 3. COMPONENTE PARA EL LOMO INDIVIDUAL
-// =================================================================
+const getBookStyle = (seed) => {
+  const rand = (seed * 997) % 100;
 
-const BookSpine = React.memo(({ book }) => {
-  // Aplicar estilos dinámicos de tamaño (grosor, altura, inclinación)
-  const { widthClass, heightClass, transformClass } = useMemo(
-    () => getBookStyle(book.id),
-    [book.id]
+  let size = "normal";
+  if (rand < 35) size = "slim";
+  else if (rand < 75) size = "normal";
+  else size = "thick";
+
+  const variants = {
+    slim: {
+      widthClass: "w-[43px] hover:w-[100px]",
+      heightClass: "h-[160px]",
+      fontClass: "text-[0.65rem]",
+      rotate: "rotate-[0.3deg]",
+    },
+    normal: {
+      widthClass: "w-[50px] hover:w-[120px]",
+      heightClass: "h-[185px]",
+      fontClass: "text-[0.72rem]",
+      rotate: "rotate-[-0.2deg]",
+    },
+    thick: {
+      widthClass: "w-[58px] hover:w-[140px]",
+      heightClass: "h-[200px]",
+      fontClass: "text-[0.80rem]",
+      rotate: "rotate-[0.25deg]",
+    },
+  };
+
+  return variants[size];
+};
+
+const truncate = (text, max) => {
+  if (!text) return "";
+  if (text.length <= max) return text;
+  return text.slice(0, max).trimEnd() + "…";
+};
+
+const BookSpine = React.memo(function BookSpine({ book, onBookClick }) {
+  const { activeBook } = useLibraryStore();
+
+  const { widthClass, heightClass, fontClass, rotate, size } = useMemo(
+    () => getBookStyle(book.id ?? book._id),
+    [book.id, book._id]
   );
 
-  // Lógica para tamaño de fuente dinámico:
-  // Si el título es muy largo, usa un tamaño de fuente menor para asegurar que quepa
-  let fontSizeClass = "text-xs"; // Por defecto
-  if (book.title.length > 28) {
-    fontSizeClass = "text-[0.55rem]"; // Muy pequeño
-  } else if (book.title.length > 20) {
-    fontSizeClass = "text-[0.6rem]"; // Pequeño
-  } else if (book.title.length > 15) {
-    fontSizeClass = "text-sm"; // Normal
-  } else {
-    fontSizeClass = "text-base"; // Grande
-  }
+  const isSelected =
+    activeBook && (activeBook.id === book.id || activeBook._id === book._id);
+
+  const maxTitle = size === "slim" ? 16 : size === "normal" ? 22 : 28;
+  const spineTitle = truncate(book.title, maxTitle);
+  const bookBackgroundColor = getStatusColor(book.status);
 
   return (
     <div
-      className={`
-        ${widthClass} ${heightClass} ${transformClass}
-        relative flex-shrink-0 cursor-pointer 
-        transition-all duration-200 
-        hover:shadow-xl hover:scale-[1.03] hover:z-10
-      `}
-      style={{
-        backgroundColor: book.color, // Color específico del libro
-        boxShadow: "inset -2px 0 5px rgba(0,0,0,0.3)", // Sombra interior para darle profundidad
-        borderRadius: "2px 0 0 2px", // Borde redondeado sutil
-        margin: "0 1px", // Espacio sutil entre libros
-      }}
-      title={`${book.title} (${book.year})`}
-      // Simular un click que podría llevar a los detalles del libro
-      onClick={() => console.log(`Mostrando detalles de: ${book.title}`)}
+      className={[
+        "relative flex-shrink-0 cursor-pointer select-none group",
+        "transition-all duration-300 ease-out hover:z-40",
+        isSelected ? "z-30" : "z-10",
+      ].join(" ")}
+      style={{ transform: rotate }}
+      onClick={() => onBookClick(book)}
     >
-      {/* Título rotado para simular el lomo */}
       <div
-        className={`
-          absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-          whitespace-nowrap ${fontSizeClass} 
-          text-white font-serif font-bold tracking-tight 
-          text-shadow-sm
-        `}
+        className={[
+          widthClass,
+          heightClass,
+          "rounded-t-[3px] rounded-b-[3px]",
+          "relative overflow-hidden flex flex-col justify-between items-center py-2",
+          "border-l border-white/30 shadow-md",
+          "transition-all duration-300 ease-out",
+          isSelected ? "ring-2 ring-amber-400" : "",
+        ].join(" ")}
         style={{
-          transform: "translate(-50%, -50%) rotate(90deg)",
-          // Para que el texto se vea bien en colores oscuros
-          textShadow: "0 0 1px rgba(0,0,0,0.8)",
+          backgroundColor: bookBackgroundColor,
+          boxShadow:
+            "inset -3px 0 8px rgba(0,0,0,0.3), inset 2px 0 2px rgba(255,255,255,0.25)",
         }}
       >
-        {book.title}
-      </div>
+        {book.cover && (
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-cover bg-center z-20"
+            style={{ backgroundImage: `url(${book.cover})` }}
+          />
+        )}
 
-      {/* Detalle del autor en la parte inferior del lomo */}
-      <div
-        className="absolute bottom-1 w-full text-center text-[0.4rem] font-medium text-white/80"
-        style={{
-          transform: "rotate(90deg) translate(-50%, -50%)",
-          transformOrigin: "top left",
-        }}
-      >
-        {book.author}
+        <div className="absolute inset-0 bg-black/10 pointer-events-none group-hover:opacity-0 transition-opacity" />
+
+        <div
+          className="absolute left-0 right-0 top-0 h-[8px] z-30 group-hover:opacity-0 transition-opacity"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0))",
+          }}
+        />
+
+        <div
+          className="absolute left-0 right-0 bottom-0 h-[10px] z-30 group-hover:opacity-0 transition-opacity"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.3), rgba(0,0,0,0))",
+          }}
+        />
+
+        <div
+          className={[
+            "relative z-30 my-auto text-center font-bold tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]",
+            "group-hover:opacity-0 transition-opacity duration-150",
+            fontClass,
+          ].join(" ")}
+          style={{
+            writingMode: "vertical-rl",
+            transform: "rotate(180deg)",
+            maxHeight: "80%",
+          }}
+        >
+          {spineTitle}
+        </div>
+
+        {size !== "slim" && book.author && (
+          <div
+            className="relative z-30 text-[0.45rem] text-white/90 text-center truncate w-full px-0.5 mb-1 group-hover:opacity-0 transition-opacity duration-150"
+            style={{ textShadow: "0 1px 1px rgba(0,0,0,0.8)" }}
+          >
+            {truncate(
+              Array.isArray(book.author) ? book.author.join(", ") : book.author,
+              10
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 });
 
-// =================================================================
-// 4. COMPONENTE PRINCIPAL DE LA ESTANTERÍA
-// =================================================================
-
 export const MyBookshelf = () => {
-  const { books } = useLibraryStore();
+  const { books, selectBook, startLoadingBooks } = useLibraryStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    startLoadingBooks();
+  }, []);
+
+  const handleBookClick = (book) => {
+    selectBook(book);
+    const bookSlug = createSlug(book.title);
+    navigate(`/${bookSlug}/${book._id}`);
+  };
 
   const groupedBooks = useMemo(() => {
-    return books.reduce((acc, book) => {
-      const genre = book.genre || "Sin Género"; // Usar 'Sin Género' si falta
-      if (!acc[genre]) {
-        acc[genre] = [];
-      }
-      acc[genre].push(book);
+    const keyOf = (b) => b.genre || "Sin Género";
+    return books.reduce((acc, b) => {
+      const key = keyOf(b);
+      (acc[key] ||= []).push(b);
       return acc;
     }, {});
   }, [books]);
 
-  const genres = Object.keys(groupedBooks);
+  const categories = Object.keys(groupedBooks);
 
-  // La estantería es un contenedor con una balda de madera
-  const Bookshelf = ({ books, title }) => (
-    <div className="mb-8">
-      <h2 className="text-2xl font-semibold mb-2 text-stone-700 border-b border-stone-300 pb-1">
-        {title}
-      </h2>
-      <div className="w-full flex justify-start items-end h-[280px] p-2 relative">
-        {/* La balda (shelf) de madera */}
+  const BookshelfShelf = ({ shelfBooks, title }) => (
+    <div className="flex flex-col h-full bg-white/40 border border-stone-200/80 rounded-xl p-4 shadow-sm backdrop-blur-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-base sm:text-lg font-bold text-stone-800 truncate">
+          {title}
+        </h2>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-200/80 text-stone-600">
+          {shelfBooks?.length || 0}
+        </span>
+        <div className="h-[1px] flex-1 bg-stone-300/60 ml-2" />
+      </div>
+
+      <div className="relative px-2 mt-auto">
         <div
-          className="absolute bottom-0 left-0 right-0 h-4 bg-yellow-900 shadow-xl z-10 
-                       rounded-b-sm border-t-2 border-yellow-800"
+          className="absolute left-0 right-0 -top-[6px] h-[16px] rounded-t-md shadow-lg"
           style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, rgba(255,255,255,.05), rgba(255,255,255,.05) 10px, transparent 10px, transparent 20px)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0))," +
+              "repeating-linear-gradient(90deg, rgba(0,0,0,0.10), rgba(0,0,0,0.00) 10px)",
+            backgroundColor: "#8b5a2b",
+            border: "1px solid rgba(70,40,15,0.55)",
           }}
         />
 
-        {/* Los libros */}
-        <div className="flex flex-row items-end h-full w-full overflow-x-auto overflow-y-hidden pb-4 pr-4 z-20">
-          {books.map((book) => (
-            // Usamos el id o _id para la key
-            <BookSpine key={book.id || book._id} book={book} />
-          ))}
-          {/* Espacio vacío para completar la estantería */}
-          {books.length < 15 && (
-            <div className="flex-grow min-w-[50px] h-full"></div>
-          )}
+        <div
+          className="h-[10px] rounded-b-md border-t border-yellow-900/40 shadow-inner"
+          style={{
+            background: "linear-gradient(180deg, #a56a33, #7a4b22)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.12)",
+          }}
+        />
+
+        {/* 👈 Altura ajustada de h-[210px] a h-[235px] para evitar que se corten los libros altos */}
+        <div className="mt-5 h-[235px] flex items-end overflow-x-auto overflow-y-hidden pb-2">
+          <div className="flex flex-row items-end gap-[6px] min-w-max pr-2">
+            {(shelfBooks || []).map((book) => (
+              <BookSpine 
+                key={book.id ?? book._id} 
+                book={book} 
+                onBookClick={handleBookClick} 
+              />
+            ))}
+
+            {(!shelfBooks || shelfBooks.length === 0) && (
+              <div className="text-sm text-stone-400 italic px-2 pb-2">
+                Estantería vacía
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="font-['Inter'] min-h-screen bg-gray-100 p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-extrabold mb-8 text-gray-800 text-center tracking-tight">
-          Mis libros
-        </h1>
+    <div className="min-h-screen p-4 sm:p-8 bg-gradient-to-b from-stone-50 to-stone-100">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-stone-800 tracking-tight">
+            My digital shelf
+          </h1>
+          <p className="text-stone-600 mt-2">
+            A digital version of my library with my books organized
+          </p>
+        </div>
 
-        {/* Contenedor principal de la estantería: simula la pared */}
         <div
-          className="bg-stone-200 p-4 rounded-xl shadow-inner border border-stone-300"
+          className="rounded-2xl border border-stone-200 shadow-sm p-4 sm:p-6"
           style={{
-            minHeight: "600px",
             backgroundImage:
-              "radial-gradient(circle, #f5f5f4 0%, #e7e5e4 100%)",
+              "radial-gradient(circle at 20% 10%, rgba(255,255,255,0.9), rgba(255,255,255,0) 45%)," +
+              "repeating-linear-gradient(90deg, rgba(80,60,30,0.03), rgba(80,60,30,0.03) 1px, transparent 1px, transparent 14px)",
           }}
         >
-          {/* Renderizado dinámico de estanterías por género */}
-          {genres.map((genre) => (
-            <React.Fragment key={genre}>
-              <Bookshelf books={groupedBooks[genre]} title={genre} />
-              {/* Separador de pared y espacio, excepto después del último género */}
-              {genre !== genres[genres.length - 1] && (
-                <div className="my-8 border-t border-stone-300/50"></div>
-              )}
-            </React.Fragment>
-          ))}
-
-          {/* Si no hay libros, mostrar un mensaje */}
-          {books.length === 0 && (
-            <div className="text-center py-20 text-gray-500 text-lg">
+          {categories.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {categories.map((cat) => (
+                <BookshelfShelf 
+                  key={cat} 
+                  shelfBooks={groupedBooks[cat]} 
+                  title={cat} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 text-stone-500 text-lg">
               No hay libros cargados en tu biblioteca.
             </div>
           )}

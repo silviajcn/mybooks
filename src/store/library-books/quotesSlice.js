@@ -1,14 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { books as quotes } from '../../data/quotes';
 
-function getRandomIndex(length, exclude) {
-  let idx;
-  do {
-    idx = Math.floor(Math.random() * length);
-  } while (idx === exclude);
-  return idx;
-}
-
 export const quotesSlice = createSlice({
   name: 'quotes',
   initialState: {
@@ -17,9 +9,12 @@ export const quotesSlice = createSlice({
   },
   reducers: {
     nextQuote: (state) => {
-      state.currentIndex = getRandomIndex(state.quotes.length, state.currentIndex);
+      state.currentIndex = (state.currentIndex + 1) % state.quotes.length;
+    },
+    prevQuote: (state) => {
+      state.currentIndex = (state.currentIndex - 1 + state.quotes.length) % state.quotes.length;
     },
   },
 });
 
-export const { nextQuote } = quotesSlice.actions;
+export const { nextQuote, prevQuote } = quotesSlice.actions;

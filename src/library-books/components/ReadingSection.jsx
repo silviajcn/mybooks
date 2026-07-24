@@ -16,7 +16,7 @@ export const ReadingSection = ({ onBookClick }) => {
             className="text-[1.2rem] text-gray-800 font-bold"
             style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
           >
-            Leyendo
+            Reading
           </span>
         </div>
         <div className="flex-1 min-w-0">

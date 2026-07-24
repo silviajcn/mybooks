@@ -462,7 +462,7 @@ export const RegisterBook = () => {
     <div className="relative font-['Inter']">
       <div className="w-full bg-white rounded-[10px] shadow-lg flex flex-col justify-center px-4 py-6 md:px-8 md:py-10 lg:px-12 lg:py-12 mx-auto">
         <h2 className="text-3xl font-extrabold mb-8 text-gray-800 text-center tracking-tight">
-          Registrar nuevo libro
+          {activeBook ? "Editar libro" : "Registrar nuevo libro"}
         </h2>
         <form className="flex flex-col gap-8" onSubmit={onSubmit}>
           {/* === SECCIÓN 1: DATOS DEL LIBRO + PREVISUALIZACIÓN === */}

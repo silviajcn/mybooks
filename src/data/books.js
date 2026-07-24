@@ -39,7 +39,7 @@ export const books = [
         origin: 'Préstamo',
         originPlace: 'Emerlin',
         review: '',
-        status: 'Leído',
+        status: 'Abandonado',
         bookScore: 3,
         numberReading: 1
     },
@@ -83,7 +83,7 @@ export const books = [
         origin: 'Compra',
         originPlace: 'FilBo',
         review: '',
-        status: 'Leído',
+        status: 'Por comprar',
         bookScore: 3,
         numberReading: 1
     },
@@ -149,7 +149,7 @@ export const books = [
         origin: 'Compra',
         originPlace: 'Buscalibre',
         review: 'Desgarrador, fuerte, doloroso y esperanzador... son algunas formas de describir y vivir este libro para quienes somos migrantes.',
-        status: 'Leído',
+        status: 'Relectura',
         bookScore: 5,
         numberReading: 1
     },
@@ -215,7 +215,7 @@ export const books = [
         origin: 'Préstamo',
         originPlace: 'Emerlin',
         review: '',
-        status: 'Leído',
+        status: 'Lista de deseos',
         bookScore: 4,
         numberReading: 1
     },
@@ -303,7 +303,7 @@ export const books = [
         origin: 'Compra',
         originPlace: 'Buscalibre',
         review: '',
-        status: 'Leyendo',
+        status: 'Por leer',
         bookScore: 0,
         numberReading: 1
     },
